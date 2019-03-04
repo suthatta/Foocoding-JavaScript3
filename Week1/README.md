@@ -31,4 +31,4 @@ Here are resources that we like you to read as a preparation for the first lectu
 
 ### Handing in homework using GitHub pull requests
 
-- [Handing in homework](https://github.com/HackYourFuture/fundamentals/blob/master/fundamentals/homework_pr.md)
+- [Handing in homework](https://github.com/FooCoding/fundamentals/blob/master/fundamentals/homework_pr.md)
