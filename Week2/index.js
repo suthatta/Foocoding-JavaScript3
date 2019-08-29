@@ -1,8 +1,8 @@
 'use strict';
 
 {
-  function fetchJSON(url, cb) {
-    return new Promise(url, (resolve, reject) => {
+  function fetchJSON(url) {
+    return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', url);
       xhr.responseType = 'json';
@@ -13,7 +13,6 @@
           reject(new Error(`Network error: ${xhr.status} - ${xhr.statusText}`));
         }
       };
-      xhr.onerror = () => cb(new Error('Network request failed'));
       xhr.send();
     });
   }
@@ -90,87 +89,69 @@
     //const repolist = getElementByClassName('left-div');
   }
   //right
-
   function createContributor(element) {
-    fetchJSON(element.contributors_url, (err, data) => {
+    fetchJSON(element.contributors_url).then(data => {
       const root = document.getElementById('container');
-      if (err) {
-        createAndAppend('div', root, { text: err.message, class: 'alert-error' });
-      } else {
-        let contributors = createAndAppend('div', root, {
-          id: 'contributors',
-          class: 'rightDiv whiteFrame',
-        });
-        createAndAppend('p', contributors, { class: 'contributorsHeader', text: 'Contributors' });
+      let contributors = createAndAppend('div', root, {
+        id: 'contributors',
+        class: 'rightDiv whiteFrame',
+      });
+      createAndAppend('p', contributors, { class: 'contributorsHeader', text: 'Contributors' });
 
-        let ul = createAndAppend('ul', contributors, { class: 'contributorsList' });
-        for (let i = 0; i < data.length; i++) {
-          let li = createAndAppend('li', ul, { class: 'contributorItem' });
-          let img = createAndAppend('img', li, {
-            src: data[i].avatar_url,
-            class: 'contributorsAvatar',
-            height: 48,
-          });
-          let login = createAndAppend('a', li, {
-            text: data[i].login,
-            href: data[i].html_url,
-            target: '_blank',
-            class: 'contributorName',
-          });
-          let badge = createAndAppend('div', li, {
-            text: data[i].contributions,
-            class: 'contributorBadge',
-          });
-        }
+      let ul = createAndAppend('ul', contributors, { class: 'contributorsList' });
+      for (let i = 0; i < data.length; i++) {
+        let li = createAndAppend('li', ul, { class: 'contributorItem' });
+        let img = createAndAppend('img', li, {
+          src: data[i].avatar_url,
+          class: 'contributorsAvatar',
+          height: 48,
+        });
+        let login = createAndAppend('a', li, {
+          text: data[i].login,
+          href: data[i].html_url,
+          target: '_blank',
+          class: 'contributorName',
+        });
+        let badge = createAndAppend('div', li, {
+          text: data[i].contributions,
+          class: 'contributorBadge',
+        });
       }
     });
   }
 
   //main for run program
   function main(url) {
-    return new Promise((resolve, reject) => {
-      const root = document.getElementById('root');
-      fetchJSON(
-        url,
-        (err, data)
-          .then(res => res.json())
-          .then(data => {
-            resolve(data);
+    const root = document.getElementById('root');
+    fetchJSON(url)
+      .catch(reject => {
+        createAndAppend('div', root, { text: reject.message, class: 'alert-error' });
+      })
+      .then(data => {
+        data.sort(function(item1, item2) {
+          if (item1.name.toUpperCase() < item2.name.toUpperCase()) return -1;
+          if (item1.name > item2.name) return 1;
+          return 0;
+        });
+        //Show Header
+        const root = document.getElementById('root');
+        selectInfo(data);
+        //Create and show Container left-right
+        createAndAppend('div', root, { id: 'container', class: 'container' });
+        createRepo(data[0]);
+        createContributor(data[0]);
+        //change value if select repo in drop down
+        document.getElementById('RepoList').onchange = function() {
+          let selectedItem = this.options[this.selectedIndex].value;
+          let table = document.getElementById('RepositoryOverview');
+          table.parentNode.removeChild(table);
+          let contributors = document.getElementById('contributors');
+          contributors.parentNode.removeChild(contributors);
 
-            /*
-           data.sort(function (item1, item2) {
-           if (item1.name.toUpperCase() < item2.name.toUpperCase()) return -1;
-           if (item1.name > item2.name) return 1;
-           return 0;
-           });*/
-
-            data.sort((item1, item2) => item1.localCompare(item2));
-
-            //Show Header
-            selectInfo(data);
-            //Create and show Container left-right
-            createAndAppend('div', root, { id: 'container', class: 'container' });
-            //left-side
-            createRepo(data[0]);
-            //right-side
-            createContributor(data[0]);
-
-            //change value if select repo in drop down
-
-            document.getElementById('RepoList').onchange = function() {
-              let selectedItem = this.options[this.selectedIndex].value;
-              let table = document.getElementById('RepositoryOverview');
-              table.parentNode.removeChild(table);
-              let contributors = document.getElementById('contributors');
-              contributors.parentNode.removeChild(contributors);
-
-              createRepo(data[selectedItem]);
-              createContributor(data[selectedItem]);
-            };
-          })
-          .catch(err => reject(err)),
-      );
-    });
+          createRepo(data[selectedItem]);
+          createContributor(data[selectedItem]);
+        };
+      });
   }
 
   const HYF_REPOS_URL = 'https://api.github.com/orgs/HackYourFuture/repos?per_page=100';
